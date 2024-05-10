@@ -74,15 +74,14 @@ features = {
     
 }
 
+# calculate asa scores
 def calculate_asa_score(coefficients, features):
-    score = coefficients['intercept'][0]  # Start with intercept
+    score = coefficients['intercept'][0]
     for feature, coef_list in coefficients.items():
         if feature != 'intercept':
-            index = min(len(coef_list) - 1, features.get(feature, 0))
-            score += features.get(feature, 0) * coef_list[index]  # Multiply feature value by corresponding coefficient
+            asa_index = int(feature[-1]) - 2  # Extract ASA index from the key
+            score += coef_list[asa_index] * features.get(feature, 0)
     return score
-
-
 
 # calculate risks
 def calculate_risk(scores):
@@ -94,7 +93,7 @@ def calculate_risk(scores):
 # print risks
 def print_risks(risks):
     for key, value in risks.items():
-        print("{}: {:.0f}%".format(key, value * 100))
+        print("{}: {:.0f}%".format(key.upper(), value * 100))
 
 # main function
 def main(coefficients, features):
@@ -102,8 +101,7 @@ def main(coefficients, features):
     risks = calculate_risk(asa_scores)
     print_risks(risks)
     max_risk_key = max(risks, key=risks.get)
-    print(max_risk_key)
-    #print("most significant asa model: {} ({:.0f}%)".format(max_risk_key(), risks[max_risk_key] * 100))
+    print("most significant asa model: {} ({:.0f}%)".format(max_risk_key.upper(), risks[max_risk_key] * 100))
 
 # example usage
 main(coefficients, features)
