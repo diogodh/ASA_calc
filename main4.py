@@ -36,24 +36,23 @@ coefficients = {
     "weight_loss": [1.53567146257999, 2.6311769776807, 2.74604881740667]
 }
 
-# example features
 features = {
-    "age": 50,
+    "age": 30,
     "male": 1,
-    "bmi": 26,
+    "bmi": 31,
    
     "partialdep": 0,
     "fulldep": 0,
-    "dmnoninsulinmed": 0,
-    "dminsulin": 1,
-    "dypsneaexert": 0,
+    "dmnoninsulinmed": 1,
+    "dminsulin": 0,
+    "dypsneaexert": 1,
     "dypsnearest": 0,
-    "copd": 0,
+    "copd": 1,
     "chf": 0,
-    "htnmed": 0,
+    "htnmed": 1,
     "smoke": 1,
     "dialysis": 0,
-    "renalfail": 0,
+    "renalfail": 1,
     "ventilator": 0,
 
     "ascites": 0,
@@ -70,38 +69,49 @@ features = {
     "steriod": 0,
     "transfusion": 0,
     "open_wound_infect": 0,
-    "weight_loss": 0
-    
+    "weight_loss": 0    
 }
 
-# calculate asa scores
-def calculate_asa_score(coefficients, features):
-    score = coefficients['intercept'][0]
-    for feature, coef_list in coefficients.items():
-        if feature != 'intercept':
-            asa_index = int(feature[-1]) - 2  # Extract ASA index from the key
-            score += coef_list[asa_index] * features.get(feature, 0)
-    return score
 
-# calculate risks
-def calculate_risk(scores):
-    exp_scores = {key: math.exp(value) for key, value in scores.items()}
-    denom = 1 + sum(exp_scores.values())
-    risks = {key: exp_score / denom for key, exp_score in exp_scores.items()}
-    return risks
+def calculate_sum(coefficients, features, asa):
+    intercept = coefficients["intercept"]
+    sum_result = intercept[asa]
+    
+    for feature, value in features.items():
+        if feature in coefficients:
+            coefficient = coefficients[feature][asa]  # Taking the first coefficient for each feature
+            sum_result += value * coefficient
+    
+    return sum_result
 
-# print risks
-def print_risks(risks):
-    for key, value in risks.items():
-        print("{}: {:.0f}%".format(key.upper(), value * 100))
+def calculate_risk(asa2_result, asa3_result, asa4_result):
+    denom = 1 + (math.exp(asa4_result) + math.exp(asa3_result) + math.exp(asa2_result)) / 100
+    risk1 = 1 / denom
+    risk2 = math.exp(asa2_result) / denom
+    risk3 = math.exp(asa3_result) / denom
+    risk4 = math.exp(asa4_result) / denom
 
-# main function
-def main(coefficients, features):
-    asa_scores = {key: calculate_asa_score(coefficients, features) for key in coefficients['intercept']}
-    risks = calculate_risk(asa_scores)
-    print_risks(risks)
-    max_risk_key = max(risks, key=risks.get)
-    print("most significant asa model: {} ({:.0f}%)".format(max_risk_key.upper(), risks[max_risk_key] * 100))
+    return risk1, risk2, risk3, risk4
 
-# example usage
-main(coefficients, features)
+
+asa2_result = calculate_sum(coefficients, features, 0)
+asa3_result = calculate_sum(coefficients, features, 1)
+asa4_result = calculate_sum(coefficients, features, 2)
+
+risk1, risk2, risk3, risk4 = calculate_risk(asa2_result, asa3_result, asa4_result)
+
+print("\nrisk 1: {:.0f}%".format(risk1))
+print("risk 2: {:.0f}%".format(risk2))
+print("risk 3: {:.0f}%".format(risk3))
+print("risk 4: {:.0f}%".format(risk4))
+
+max_percent = max(risk1, risk2, risk3, risk4)
+
+if max_percent == risk1:
+    print("\nasa1: {:.0f}%\n".format(max_percent))
+elif max_percent == risk2:
+    print("\nasa2: {:.0f}%\n".format(max_percent))
+elif max_percent == risk3:
+    print("\nasa3: {:.0f}%\n".format(max_percent))
+else:
+    print("\nasa4: {:.0f}%\n".format(max_percent))
